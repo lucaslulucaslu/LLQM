@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "llqm"
+version = "0.1.0"
+description = "Find more information about current news."
+authors = ["Shicheng Lu"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
