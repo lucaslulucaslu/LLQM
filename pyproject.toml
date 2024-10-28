@@ -7,7 +7,15 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+langgraph = "^0.2.39"
+langchain-community = "^0.3.3"
+openai = "^1.52.2"
+bs4 = "^0.0.2"
 
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.10.0"
+isort = "^5.13.2"
 
 [build-system]
 requires = ["poetry-core"]
