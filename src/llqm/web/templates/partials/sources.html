@@ -1,0 +1,68 @@
+<div>
+    <div class="flex items-center gap-3 mb-4">
+        <h3 class="text-sm font-semibold text-[var(--text-secondary)]">Sources</h3>
+        <span class="text-xs text-[var(--text-muted)]">{{ sources | length }} total</span>
+        <div class="flex-1"></div>
+        <!-- Sort controls -->
+        <div class="flex gap-1 text-xs">
+            <button class="px-2 py-1 rounded hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]
+                     {% if sort_by == 'trust' %}bg-[var(--bg-hover)] text-[var(--accent)]{% endif %}"
+                hx-get="/result/{{ inv_id }}/sources?sort=trust&order={{ 'asc' if sort_by == 'trust' and sort_order == 'desc' else 'desc' }}"
+                hx-target="#tab-content" hx-swap="innerHTML">
+                Trust {{ "↑" if sort_by == "trust" and sort_order == "asc" else "↓" if sort_by == "trust" else "" }}
+            </button>
+            <button class="px-2 py-1 rounded hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]
+                     {% if sort_by == 'date' %}bg-[var(--bg-hover)] text-[var(--accent)]{% endif %}"
+                hx-get="/result/{{ inv_id }}/sources?sort=date&order={{ 'asc' if sort_by == 'date' and sort_order == 'desc' else 'desc' }}"
+                hx-target="#tab-content" hx-swap="innerHTML">
+                Date {{ "↑" if sort_by == "date" and sort_order == "asc" else "↓" if sort_by == "date" else "" }}
+            </button>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr
+                    class="text-left text-xs text-[var(--text-muted)] uppercase tracking-wide border-b border-[var(--border)]">
+                    <th class="pb-2 pr-4">Source</th>
+                    <th class="pb-2 pr-4">Trust</th>
+                    <th class="pb-2 pr-4">Date</th>
+                    <th class="pb-2 pr-4">Title</th>
+                    <th class="pb-2">Link</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border)]">
+                {% for s in sources %}
+                <tr class="hover:bg-[var(--bg-hover)] transition-colors">
+                    <td class="py-2 pr-4 font-medium text-[var(--text-primary)]">{{ s.domain }}</td>
+                    <td class="py-2 pr-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 h-1.5 bg-[var(--bg-primary)] rounded-full overflow-hidden">
+                                <div class="h-full rounded-full
+                            {% if s.trust >= 0.7 %}bg-emerald-400
+                            {% elif s.trust >= 0.4 %}bg-amber-400
+                            {% else %}bg-red-400{% endif %}" style="width: {{ (s.trust * 100) | round }}%"></div>
+                            </div>
+                            <span class="text-xs font-mono text-[var(--text-secondary)]">{{ "%.0f" | format(s.trust *
+                                100) }}%</span>
+                        </div>
+                    </td>
+                    <td class="py-2 pr-4 text-xs text-[var(--text-secondary)]">{{ s.date or "—" }}</td>
+                    <td class="py-2 pr-4 text-xs text-[var(--text-secondary)] max-w-xs truncate">
+                        {{ s.title[:80] }}{% if s.title | length > 80 %}&hellip;{% endif %}
+                    </td>
+                    <td class="py-2">
+                        <a href="{{ s.url }}" target="_blank" class="text-xs text-[var(--accent)] hover:underline">open
+                            &nearr;</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not sources %}
+    <p class="text-[var(--text-secondary)] text-sm py-4">No source documents collected.</p>
+    {% endif %}
+</div>

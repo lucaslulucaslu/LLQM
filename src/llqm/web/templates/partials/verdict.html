@@ -1,0 +1,69 @@
+{% set r = inv.result %}
+{% set verdict_colors = {
+"supported": {"bg": "verdict-supported-bg", "border": "verdict-supported-border", "text": "verdict-supported-text",
+"dot": "verdict-supported-dot"},
+"likely_false": {"bg": "verdict-false-bg", "border": "verdict-false-border", "text": "verdict-false-text", "dot":
+"verdict-false-dot"},
+"unverified": {"bg": "verdict-unverified-bg", "border": "verdict-unverified-border", "text": "verdict-unverified-text",
+"dot": "verdict-unverified-dot"},
+} %}
+{% set vc = verdict_colors.get(r.verdict, verdict_colors.unverified) %}
+
+<div class="{{ vc.bg }} {{ vc.border }} border rounded-xl p-5">
+    <div class="flex flex-wrap items-center gap-6 mb-4">
+        <!-- Verdict badge -->
+        <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full {{ vc.dot }}"></span>
+            <span class="text-lg font-bold {{ vc.text }} uppercase tracking-wide">
+                {{ r.verdict | replace("_", " ") }}
+            </span>
+        </div>
+
+        <!-- Confidence meter -->
+        <div class="flex items-center gap-2 min-w-[180px]">
+            <span class="text-xs text-[var(--text-secondary)]">Confidence</span>
+            <div class="flex-1 h-2 bg-[var(--bg-primary)] rounded-full overflow-hidden">
+                <div class="h-full {{ vc.dot }} rounded-full transition-all duration-500"
+                    style="width: {{ (r.confidence * 100) | round }}%"></div>
+            </div>
+            <span class="text-sm font-mono {{ vc.text }}">{{ "%.0f" | format(r.confidence * 100) }}%</span>
+        </div>
+
+        <!-- Counts -->
+        <div class="flex gap-4 text-sm text-[var(--text-secondary)]">
+            <span>{{ r.timeline | length }} events</span>
+            <span>{{ r.key_claims | length }} claims</span>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    {% if r.summary %}
+    <p class="text-sm text-[var(--text-primary)] leading-relaxed mb-3">{{ r.summary }}</p>
+    {% endif %}
+
+    <!-- Rumor origin -->
+    {% if r.rumor_origin and r.rumor_origin.first_seen_source %}
+    <div class="text-xs text-[var(--text-secondary)] flex flex-wrap gap-x-4 gap-y-1 mt-2">
+        <span>Origin: <strong>{{ r.rumor_origin.first_seen_source }}</strong></span>
+        {% if r.rumor_origin.first_seen_at %}
+        <span>First seen: {{ r.rumor_origin.first_seen_at }}</span>
+        {% endif %}
+        <span>Provenance: {{ "%.0f" | format(r.rumor_origin.provenance_confidence * 100) }}%</span>
+        {% if r.rumor_origin.first_seen_url %}
+        <a href="{{ r.rumor_origin.first_seen_url }}" target="_blank"
+            class="text-[var(--accent)] hover:underline">source &nearr;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Uncertainty notes -->
+    {% if r.uncertainty_notes %}
+    <div class="mt-3 flex flex-wrap gap-2">
+        {% for note in r.uncertainty_notes %}
+        <span class="text-xs px-2 py-1 rounded-full uncertainty-note">
+            ⚠ {{ note }}
+        </span>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

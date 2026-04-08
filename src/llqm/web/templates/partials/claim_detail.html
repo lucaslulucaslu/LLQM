@@ -1,0 +1,42 @@
+<div class="px-4 py-3 border-t border-[var(--border)] bg-[var(--bg-primary)]/50">
+    <p class="text-sm text-[var(--text-primary)] mb-3">{{ claim.text }}</p>
+
+    <div class="flex gap-4 text-xs text-[var(--text-secondary)] mb-3">
+        <span>Category: <strong>{{ claim.category }}</strong></span>
+        <span>Confidence: <strong>{{ "%.0f" | format(claim.confidence * 100) }}%</strong></span>
+        <span class="text-emerald-400">{{ claim.support_count }} supporting</span>
+        <span class="text-red-400">{{ claim.contradiction_count }} contradicting</span>
+    </div>
+
+    {% if claim.evidence %}
+    <div class="space-y-2">
+        <h4 class="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
+            Evidence ({{ claim.evidence | length }})
+        </h4>
+        {% for ev in claim.evidence %}
+        <div class="bg-[var(--bg-secondary)] rounded-lg p-3 border border-[var(--border)]">
+            <div class="flex items-center gap-2 mb-1">
+                <a href="{{ ev.url }}" target="_blank" class="text-xs text-[var(--accent)] hover:underline truncate">
+                    {{ ev.title[:60] }}{% if ev.title | length > 60 %}&hellip;{% endif %}
+                </a>
+                <!-- Trust score -->
+                <span class="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded
+                     {% if ev.trust_score >= 0.7 %}bg-emerald-500/20 text-emerald-400
+                     {% elif ev.trust_score >= 0.4 %}bg-amber-500/20 text-amber-400
+                     {% else %}bg-red-500/20 text-red-400{% endif %}">
+                    trust {{ "%.0f" | format(ev.trust_score * 100) }}%
+                </span>
+            </div>
+            <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
+                {{ ev.excerpt[:250] }}{% if ev.excerpt | length > 250 %}&hellip;{% endif %}
+            </p>
+            {% if ev.published_at %}
+            <span class="text-[10px] text-[var(--text-muted)] mt-1 block">{{ ev.published_at }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-xs text-[var(--text-muted)]">No evidence linked to this claim.</p>
+    {% endif %}
+</div>

@@ -1,0 +1,132 @@
+{% set r = inv.result %}
+
+<div id="custom-timeline" class="tl-container">
+    <!-- Date markers and cards are built by JS below -->
+</div>
+
+{% set undated_count = [] %}
+<script>
+    (function () {
+        const events = {{ timeline_json | safe
+    }};
+    const container = document.getElementById('custom-timeline');
+    const invId = '{{ inv.id }}';
+
+    // Filter dated events and sort by date
+    const dated = [];
+    const undated = [];
+    events.forEach(function (e, i) {
+        if (e.timestamp) {
+            var ts = e.timestamp.replace(/^~/, '').trim();
+            var t = new Date(ts).getTime();
+            if (!isNaN(t)) {
+                dated.push({ event: e, origIndex: i, time: t, ts: ts });
+            } else {
+                undated.push(e);
+            }
+        } else {
+            undated.push(e);
+        }
+    });
+
+    dated.sort(function (a, b) { return a.time - b.time; });
+
+    if (dated.length === 0) {
+        container.innerHTML = '<p class="text-[var(--text-muted)] text-center py-8">No dated events to display.</p>';
+        return;
+    }
+
+    // Determine corroboration level based on source count
+    // This answers "how well-sourced is this fact?" — NOT "does it support the rumor?"
+    function corrobClass(e) {
+        var n = e.source_count || 0;
+        if (n >= 3) return 'strong';
+        if (n === 2) return 'moderate';
+        if (n === 1) return 'single';
+        return 'none';
+    }
+
+    function corrobLabel(e) {
+        var n = e.source_count || 0;
+        var domains = e.source_domains || [];
+        if (n >= 2) return '◆ ' + n + ' sources';
+        if (n === 1 && domains.length > 0) return domains[0];
+        return '';
+    }
+
+    // Group events by month for date markers
+    function monthKey(t) {
+        var d = new Date(t);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+    function monthLabel(key) {
+        var parts = key.split('-');
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return months[parseInt(parts[1]) - 1] + ' ' + parts[0];
+    }
+
+    var html = '';
+    var lastMonth = '';
+
+    dated.forEach(function (d, i) {
+        var e = d.event;
+        var side = i % 2 === 0 ? 'left' : 'right';
+        var corrob = corrobClass(e);
+
+        // Month marker
+        var mk = monthKey(d.time);
+        if (mk !== lastMonth) {
+            lastMonth = mk;
+            html += '<div class="tl-month-marker">' +
+                '<div class="tl-month-label">' + monthLabel(mk) + '</div>' +
+                '</div>';
+        }
+
+        // Authority bar
+        var authHtml = '';
+        if (e.authority !== null && e.authority !== undefined) {
+            var pct = Math.round(e.authority * 100);
+            var authCls = e.authority >= 0.7 ? 'high' : (e.authority >= 0.4 ? 'mid' : 'low');
+            authHtml = '<div class="tl-authority">' +
+                '<div class="tl-auth-bar"><div class="tl-auth-fill tl-auth-' + authCls + '" style="width:' + pct + '%"></div></div>' +
+                '<span class="tl-auth-label">' + pct + '% trust</span>' +
+                '</div>';
+        }
+
+        html += '<div class="tl-row tl-' + side + '" data-idx="' + d.origIndex + '">' +
+            '  <div class="tl-card tl-corrob-' + corrob + '">' +
+            '    <div class="tl-card-header">' +
+            '      <span class="tl-date">' + e.timestamp + '</span>' +
+            '      <span class="tl-corrob-pill tl-cpill-' + corrob + '">' + corrobLabel(e) + '</span>' +
+            '    </div>' +
+            '    <p class="tl-summary">' + e.summary + '</p>' +
+            authHtml +
+            '  </div>' +
+            '  <div class="tl-connector"><div class="tl-dot tl-dot-' + corrob + '"></div></div>' +
+            '</div>';
+    });
+
+    container.innerHTML = html;
+
+    // Undated note
+    if (undated.length > 0) {
+        var note = document.createElement('p');
+        note.className = 'text-xs text-[var(--text-muted)] mt-4 text-center';
+        note.textContent = undated.length + ' event(s) without dates not shown on timeline.';
+        container.parentNode.appendChild(note);
+    }
+
+    // Click → load detail in sidebar
+    container.querySelectorAll('.tl-row').forEach(function (row) {
+        row.addEventListener('click', function () {
+            // Remove previous active
+            container.querySelectorAll('.tl-row').forEach(function (r) { r.classList.remove('tl-active'); });
+            row.classList.add('tl-active');
+            var idx = row.dataset.idx;
+            var panel = document.getElementById('event-detail-panel');
+            panel.classList.remove('hidden');
+            htmx.ajax('GET', '/result/' + invId + '/event/' + idx, '#event-detail-panel');
+        });
+    });
+}) ();
+</script>
