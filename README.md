@@ -9,9 +9,10 @@ LLQM (来龙去脉, Lái Lóng Qù Mài) — a timeline-first investigation agen
 - **Dual input modes** — investigate a text question ("Did X originate from Y?") or paste a news article URL to build the full story
 - **Hybrid source trust scoring** — 40+ known editorial sources, TLD-based rules (.gov/.edu), page-signal heuristics (schema.org, author tags, corrections policies), and LLM classification fallback for unknown domains
 - **Narrative story summary** — LLM-generated overview of the full story arc, not just individual claims
-- **Visual timeline** — interactive vertical timeline with dated event cards and source links
-- **Streaming progress** — real-time status updates as each pipeline stage completes
-- **Verdict system** — `supported`, `likely_false`, or `unverified` with confidence score, uncertainty notes, and evidence links
+- **Interactive web UI** — FastAPI + htmx with live SSE progress, vertical timeline, claim drill-down, source explorer, and dark/light theme toggle
+- **Visual timeline** — alternating left/right timeline with month markers, corroboration indicators, source authority bars, and click-to-detail
+- **Streaming progress** — real-time status updates via Server-Sent Events as each pipeline stage completes
+- **Verdict system** — `supported`, `likely_false`, or `unverified` with weighted confidence scoring, uncertainty notes, and evidence links
 
 ## Quick Start
 
@@ -39,10 +40,14 @@ SERPER_API_KEY=...               # optional, enables Serper search
 
 ### Run
 
-**Web UI (Streamlit):**
+**Web UI (FastAPI):**
 
 ```bash
 llqm-ui
+# → opens http://127.0.0.1:8000
+
+# Custom port
+llqm-ui --port 8001
 ```
 
 **CLI:**
@@ -72,9 +77,17 @@ src/llqm/
 │   ├── investigation_service.py   # LangGraph state machine
 │   ├── timeline_service.py        # Chronological event builder
 │   └── verification_service.py    # Claim scoring and verdict logic
-├── ui/
-│   ├── app.py              # Streamlit web interface
-│   └── launcher.py         # UI subprocess launcher
+├── web/
+│   ├── app.py              # FastAPI application factory & entry point
+│   ├── state.py            # Thread-safe in-memory investigation store
+│   ├── helpers.py          # Shared helpers (enriched timeline JSON, trust)
+│   ├── routes/
+│   │   ├── home.py         # Landing page
+│   │   ├── investigation.py # POST /investigate, GET /result/{id}
+│   │   ├── stream.py       # SSE endpoint for live progress
+│   │   └── partials.py     # htmx partial endpoints (timeline, claims, sources, events)
+│   ├── templates/          # Jinja2 templates (base, result, partials/)
+│   └── static/             # CSS (theme.css) and JS (app.js)
 └── utils/
     ├── date_extractor.py   # Date normalization (ISO, relative, freetext)
     └── source_registry.py  # Hybrid trust scoring system
@@ -83,16 +96,17 @@ src/llqm/
 ### Pipeline
 
 ```
-┌──────┐   ┌──────────┐   ┌─────────┐   ┌────────┐
-│ Plan │──▶│ Retrieve │──▶│ Extract │──▶│ Verify │
-└──────┘   └──────────┘   └─────────┘   └────┬───┘
-   ▲                                          │
-   │    need more evidence                    │ sufficient
-   └──────────────────────────────────────────┤
-                                              ▼
-                                       ┌─────────────┐
-                                       │ Synthesize  │──▶ Result
-                                       └─────────────┘
++--------+   +----------+   +---------+   +----------+
+|  Plan  |-->| Retrieve |-->| Extract |-->|  Verify  |
++--------+   +----------+   +---------+   +----+-----+
+     ^                                         |
+     |        need more evidence               | sufficient
+     +-----------------------------------------+
+                                               |
+                                               v
+                                        +-------------+
+                                        | Synthesize  |--> Result
+                                        +-------------+
 ```
 
 | Node | Purpose |
@@ -129,6 +143,18 @@ Unknown sources are evaluated through a hybrid system:
 
 Results are cached per domain to avoid redundant evaluation.
 
+## Web UI
+
+The web interface is built with **FastAPI + Jinja2 + htmx** (no build step, all assets via CDN):
+
+- **Landing page** — enter a rumor/question or paste a URL, choose investigation mode
+- **Live progress** — SSE-driven real-time updates as each pipeline stage runs
+- **Verdict banner** — color-coded verdict with confidence meter, event/claim counts, rumor origin
+- **Timeline tab** — alternating left/right vertical timeline with month markers, source domain labels, authority trust bars, and click-to-detail sidebar
+- **Claims tab** — accordion with evidence drill-down, trust scores per source
+- **Sources tab** — sortable table of all retrieved sources with domain trust scores
+- **Dark / Light theme** — toggle with localStorage persistence
+
 ## Output
 
 The `InvestigationResult` includes:
@@ -152,8 +178,8 @@ uv sync
 # Run tests
 python -m unittest discover -s tests -v
 
-# Launch the UI in dev
-uv run llqm-ui
+# Launch the UI in dev (with auto-reload)
+uv run llqm-ui --reload
 ```
 
 ## License

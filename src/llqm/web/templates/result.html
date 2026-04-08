@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="result-container">
+    {% if inv.status == "running" %}
+    <!-- SSE-driven progress view -->
+    <div class="max-w-2xl mx-auto mt-8">
+        <h2 class="text-xl font-bold mb-1">Investigating&hellip;</h2>
+        <p class="text-[var(--text-secondary)] mb-6 text-sm">{{ inv.query }}</p>
+
+        <div hx-ext="sse" sse-connect="/result/{{ inv.id }}/stream" sse-close="done">
+
+            <!-- Progress list (appended via SSE) -->
+            <div id="progress-list" class="space-y-3" hx-swap-oob="beforeend" sse-swap="progress">
+            </div>
+
+            <!-- When done, replace the whole result container -->
+            <div hx-swap-oob="innerHTML:#result-container" sse-swap="done">
+            </div>
+        </div>
+    </div>
+
+    {% elif inv.status == "error" %}
+    <div class="max-w-2xl mx-auto mt-8">
+        <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
+            Investigation failed: {{ inv.error }}
+        </div>
+        <a href="/" class="inline-block mt-4 text-[var(--accent)] hover:underline">&larr; Try again</a>
+    </div>
+
+    {% elif inv.status == "done" and inv.result %}
+    {% set r = inv.result %}
+
+    <!-- Verdict banner -->
+    <div class="mb-6">
+        {% include "partials/verdict.html" %}
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-[var(--border)] mb-4">
+        <nav class="flex gap-1" id="tab-nav">
+            <button class="tab-btn active-tab px-4 py-2 text-sm font-medium rounded-t-lg
+                       border border-b-0 border-[var(--border)]
+                       bg-[var(--bg-secondary)] text-[var(--accent)]" hx-get="/result/{{ inv.id }}/timeline"
+                hx-target="#tab-content" hx-swap="innerHTML" onclick="setActiveTab(this)">
+                Timeline
+            </button>
+            <button class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg
+                       text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                hx-get="/result/{{ inv.id }}/claims" hx-target="#tab-content" hx-swap="innerHTML"
+                onclick="setActiveTab(this)">
+                Claims
+            </button>
+            <button class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg
+                       text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                hx-get="/result/{{ inv.id }}/sources" hx-target="#tab-content" hx-swap="innerHTML"
+                onclick="setActiveTab(this)">
+                Sources
+            </button>
+        </nav>
+    </div>
+
+    <!-- Tab content area + event detail sidebar -->
+    <div class="flex gap-6">
+        <div id="tab-content" class="flex-1 min-w-0">
+            {% include "partials/timeline.html" %}
+        </div>
+        <div id="event-detail-panel" class="hidden w-96 shrink-0 bg-[var(--bg-secondary)] rounded-xl
+                  border border-[var(--border)] p-4 self-start sticky top-20">
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function setActiveTab(el) {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active-tab', 'border', 'border-b-0',
+                'border-[var(--border)]', 'bg-[var(--bg-secondary)]', 'text-[var(--accent)]');
+            btn.classList.add('text-[var(--text-secondary)]');
+        });
+        el.classList.add('active-tab', 'border', 'border-b-0',
+            'border-[var(--border)]', 'bg-[var(--bg-secondary)]', 'text-[var(--accent)]');
+        el.classList.remove('text-[var(--text-secondary)]');
+    }
+</script>
+{% endblock %}

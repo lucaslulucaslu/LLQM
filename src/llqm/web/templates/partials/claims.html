@@ -1,0 +1,50 @@
+{% set r = inv.result %}
+<div class="space-y-2">
+    {% for claim in r.key_claims %}
+    <div class="border border-[var(--border)] rounded-lg
+              bg-[var(--bg-secondary)] overflow-hidden">
+        <!-- Claim header (clickable) -->
+        <button class="w-full text-left px-4 py-3 flex items-center gap-3
+                   hover:bg-[var(--bg-hover)] transition-colors" hx-get="/result/{{ inv.id }}/claim/{{ loop.index0 }}"
+            hx-target="#claim-detail-{{ loop.index0 }}" hx-swap="innerHTML"
+            onclick="this.nextElementSibling.classList.toggle('hidden')">
+            <!-- Category pill -->
+            <span class="shrink-0 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full
+                   {% if claim.category == 'rumor' %}bg-purple-500/20 text-purple-400
+                   {% elif claim.category == 'causal' %}bg-blue-500/20 text-blue-400
+                   {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                {{ claim.category }}
+            </span>
+
+            <!-- Claim text -->
+            <span class="flex-1 text-sm text-[var(--text-primary)] truncate">
+                {{ claim.text[:120] }}{% if claim.text | length > 120 %}&hellip;{% endif %}
+            </span>
+
+            <!-- Confidence bar -->
+            <div class="shrink-0 flex items-center gap-2 w-28">
+                <div class="flex-1 h-1.5 bg-[var(--bg-primary)] rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all
+                      {% if claim.confidence >= 0.65 %}bg-emerald-400
+                      {% elif claim.confidence >= 0.4 %}bg-amber-400
+                      {% else %}bg-red-400{% endif %}" style="width: {{ (claim.confidence * 100) | round }}%"></div>
+                </div>
+                <span class="text-xs font-mono text-[var(--text-secondary)]">
+                    {{ "%.0f" | format(claim.confidence * 100) }}%
+                </span>
+            </div>
+
+            <!-- Support / contradiction badges -->
+            <span class="shrink-0 text-xs text-emerald-400">+{{ claim.support_count }}</span>
+            <span class="shrink-0 text-xs text-red-400">-{{ claim.contradiction_count }}</span>
+        </button>
+
+        <!-- Detail area (hidden by default, populated by htmx) -->
+        <div id="claim-detail-{{ loop.index0 }}" class="hidden"></div>
+    </div>
+    {% endfor %}
+
+    {% if not r.key_claims %}
+    <p class="text-[var(--text-secondary)] text-sm py-4">No claims extracted.</p>
+    {% endif %}
+</div>

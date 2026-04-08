@@ -1,6 +1,8 @@
 [project]
+[project]
 name = "llqm"
 version = "0.1.0"
+description = "Timeline-first news and rumor investigation agent"
 description = "Timeline-first news and rumor investigation agent"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -8,12 +10,15 @@ dependencies = [
 	"langgraph>=0.2.35",
 	"httpx>=0.27.2",
 	"pydantic>=2.8.2",
-	"streamlit>=1.44.0",
+	"fastapi>=0.115.0",
+	"uvicorn[standard]>=0.30.0",
+	"jinja2>=3.1.4",
+	"python-multipart>=0.0.9",
 ]
 
 [project.scripts]
 llqm = "llqm.cli:main"
-llqm-ui = "llqm.ui.launcher:main"
+llqm-ui = "llqm.web.app:main"
 
 [build-system]
 requires = ["hatchling>=1.25.0"]
@@ -28,4 +33,9 @@ include = [
 	"tests",
 	"README.md",
 	"pyproject.toml",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
 ]
