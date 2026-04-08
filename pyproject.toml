@@ -1,6 +1,8 @@
 [project]
+[project]
 name = "llqm"
 version = "0.1.0"
+description = "Timeline-first news and rumor investigation agent"
 description = "Timeline-first news and rumor investigation agent"
 readme = "README.md"
 requires-python = ">=3.12"
