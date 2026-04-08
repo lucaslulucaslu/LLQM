@@ -17,7 +17,11 @@ def extract_claims(documents: list[RetrievedDocument]) -> list[Claim]:
     claims_by_text: dict[str, Claim] = {}
 
     for doc in documents:
-        source_id, trust_score = resolve_source(doc.url, doc.source_id)
+        source_id, trust_score = resolve_source(
+            doc.url,
+            doc.source_id,
+            page_content=doc.content,
+        )
         snippets = _split_candidate_claims(doc.content) or [doc.title]
         for snippet in snippets:
             claim_text = snippet.strip()
@@ -88,7 +92,11 @@ def detect_rumor_origin(documents: list[RetrievedDocument]) -> RumorOrigin:
 
     sorted_docs = sorted(documents, key=lambda d: date_sort_key(d.published_at))
     first = sorted_docs[0]
-    source_id, trust_score = resolve_source(first.url, first.source_id)
+    source_id, trust_score = resolve_source(
+        first.url,
+        first.source_id,
+        page_content=first.content,
+    )
 
     has_timestamp_coverage = sum(1 for doc in documents if doc.published_at) / len(
         documents

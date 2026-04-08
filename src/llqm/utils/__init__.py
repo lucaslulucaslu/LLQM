@@ -1,8 +1,8 @@
 import os
 
-from .source_registry import resolve_source
+from .source_registry import clear_trust_cache, resolve_source
 
-__all__ = ["load_dotenv_file", "resolve_source"]
+__all__ = ["load_dotenv_file", "resolve_source", "clear_trust_cache"]
 
 
 def load_dotenv_file(dotenv_path: str = ".env") -> None:
