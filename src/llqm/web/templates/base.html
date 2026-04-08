@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LLQM Investigator{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ['selector', '[data-theme="dark"]'],
+        }
+    </script>
+
+    <!-- htmx -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/theme.css">
+</head>
+
+<body class="min-h-screen transition-colors duration-200
+             bg-[var(--bg-primary)] text-[var(--text-primary)]">
+
+    <!-- Nav -->
+    <nav class="sticky top-0 z-50 border-b border-[var(--border)]
+              bg-[var(--bg-secondary)] backdrop-blur">
+        <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="/" class="text-lg font-bold tracking-tight text-[var(--accent)]">
+                LLQM <span class="font-normal text-[var(--text-secondary)]">Investigator</span>
+            </a>
+            <button id="theme-toggle" onclick="toggleTheme()"
+                class="p-2 rounded-lg hover:bg-[var(--bg-hover)] transition-colors" title="Toggle theme">
+                <span id="theme-icon-dark" class="hidden text-xl">☀️</span>
+                <span id="theme-icon-light" class="hidden text-xl">🌙</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- App JS -->
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

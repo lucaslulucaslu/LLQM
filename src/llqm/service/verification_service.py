@@ -59,13 +59,30 @@ def score_claims(claims: list[Claim]) -> list[Claim]:
         evidence_sources = {item.source_id for item in claim.evidence}
         claim.support_count = len(evidence_sources)
 
+        # Count evidence that explicitly debunks / contradicts the claim.
+        # We look for negation patterns that indicate the *article itself*
+        # is refuting the claim, not just mentioning the word "false".
+        _negation_phrases = (
+            "not true",
+            "no evidence",
+            "been debunked",
+            "was debunked",
+            "is false",
+            "are false",
+            "was false",
+            "were false",
+            "misleading claim",
+            "baseless",
+            "unfounded",
+            "fabricated",
+            "no proof",
+            "has been denied",
+            "was denied",
+        )
         negation_hits = sum(
             1
             for item in claim.evidence
-            if any(
-                word in item.excerpt.lower()
-                for word in ("false", "debunk", "misleading", "not true")
-            )
+            if any(phrase in item.excerpt.lower() for phrase in _negation_phrases)
         )
         claim.contradiction_count = negation_hits
 
@@ -114,26 +131,53 @@ def detect_rumor_origin(documents: list[RetrievedDocument]) -> RumorOrigin:
 
 
 def decide_verdict(claims: list[Claim]) -> tuple[Verdict, float, list[str]]:
-    """Return verdict with overall confidence and uncertainty notes."""
+    """Return verdict with overall confidence and uncertainty notes.
+
+    Strategy:
+    - Weigh each claim by its confidence to compute an overall score.
+    - A claim is "supportive" if support_count > contradiction_count.
+    - A claim is "contradicting" if contradiction_count > 0 AND
+      contradiction_count >= support_count.
+    - The verdict reflects the *balance* of weighted support vs contradiction.
+    """
     if not claims:
         return "unverified", 0.2, ["No sufficient evidence retrieved."]
 
+    total_support_weight = 0.0
+    total_contra_weight = 0.0
+    total_weight = 0.0
+
+    for claim in claims:
+        w = max(claim.confidence, 0.1)  # avoid zero-weight claims
+        total_weight += w
+        if claim.support_count > claim.contradiction_count:
+            total_support_weight += w
+        elif (
+            claim.contradiction_count > 0
+            and claim.contradiction_count >= claim.support_count
+        ):
+            total_contra_weight += w
+        # else: neutral / unverified — contributes to total_weight only
+
+    support_ratio = total_support_weight / total_weight if total_weight else 0
+    contra_ratio = total_contra_weight / total_weight if total_weight else 0
+
     max_confidence = max(claim.confidence for claim in claims)
-    supported_claims = [
-        claim
-        for claim in claims
-        if claim.support_count >= 2 and claim.confidence >= 0.65
-    ]
-    contradiction_weight = sum(claim.contradiction_count for claim in claims)
+    avg_confidence = sum(claim.confidence for claim in claims) / len(claims)
 
     uncertainty_notes: list[str] = []
-    if contradiction_weight > 0:
+    if total_contra_weight > 0:
         uncertainty_notes.append("Conflicting evidence exists across sources.")
     if any(claim.support_count < 2 for claim in claims[:5]):
         uncertainty_notes.append("Some claims rely on single-source evidence.")
 
-    if contradiction_weight >= len(claims) and max_confidence < 0.55:
-        return "likely_false", max(0.25, max_confidence), uncertainty_notes
-    if supported_claims:
+    # "likely_false" requires strong contradiction signal
+    if contra_ratio > 0.5 and support_ratio < 0.3:
+        confidence = max(0.3, min(0.9, avg_confidence + contra_ratio * 0.2))
+        return "likely_false", confidence, uncertainty_notes
+
+    # "supported" requires meaningful support
+    if support_ratio >= 0.4 and support_ratio > contra_ratio:
         return "supported", max_confidence, uncertainty_notes
-    return "unverified", max_confidence, uncertainty_notes
+
+    return "unverified", avg_confidence, uncertainty_notes
