@@ -39,14 +39,26 @@
         </div>
 
         <!-- URL input -->
-        <div id="url-input" class="hidden">
-            <label for="url" class="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
-                Paste a news article URL
-            </label>
-            <input type="url" id="url" name="url" placeholder="https://www.reuters.com/world/..." class="w-full px-4 py-3 rounded-lg
-                    bg-[var(--bg-primary)] border border-[var(--border)]
-                    text-[var(--text-primary)] placeholder-[var(--text-muted)]
-                    focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
+        <div id="url-input" class="hidden space-y-4">
+            <div>
+                <label for="url" class="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
+                    Paste a news article URL
+                </label>
+                <input type="url" id="url" name="url" placeholder="https://www.reuters.com/world/..." class="w-full px-4 py-3 rounded-lg
+                        bg-[var(--bg-primary)] border border-[var(--border)]
+                        text-[var(--text-primary)] placeholder-[var(--text-muted)]
+                        focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
+            </div>
+            <div>
+                <label for="url-query" class="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
+                    What do you want to know? <span class="text-[var(--text-muted)]">(optional)</span>
+                </label>
+                <input type="text" id="url-query" name="url_query"
+                    placeholder="e.g. What is the full timeline of this story?" class="w-full px-4 py-3 rounded-lg
+                              bg-[var(--bg-primary)] border border-[var(--border)]
+                              text-[var(--text-primary)] placeholder-[var(--text-muted)]
+                              focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
+            </div>
         </div>
 
         <button type="submit" class="w-full py-3 px-6 rounded-lg font-semibold

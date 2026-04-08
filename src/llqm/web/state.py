@@ -18,6 +18,7 @@ class StoredInvestigation:
     result: InvestigationResult | None = None
     documents: list[RetrievedDocument] = field(default_factory=list)
     error: str | None = None
+    parent_id: str | None = None  # links follow-up to original investigation
 
 
 _lock = threading.Lock()

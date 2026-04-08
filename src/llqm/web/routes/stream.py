@@ -120,6 +120,24 @@ def _extract_result_content(inv: state.StoredInvestigation, request: Request) ->
                   border border-[var(--border)] p-4 self-start sticky top-20"></div>
     </div>
 
+    <div class="mt-8 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-4">
+      <form action="/result/{inv_id}/followup" method="POST" class="flex gap-3">
+        <input type="text" name="query"
+               placeholder="Ask a follow-up question about this story…"
+               class="flex-1 px-4 py-2 rounded-lg
+                      bg-[var(--bg-primary)] border border-[var(--border)]
+                      text-[var(--text-primary)] placeholder-[var(--text-muted)]
+                      focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+               required>
+        <button type="submit"
+                class="px-5 py-2 rounded-lg font-semibold
+                       bg-[var(--accent)] text-white
+                       hover:opacity-90 transition-opacity whitespace-nowrap">
+          Ask
+        </button>
+      </form>
+    </div>
+
     <script>
     function setActiveTab(el) {{
       document.querySelectorAll('.tab-btn').forEach(btn => {{

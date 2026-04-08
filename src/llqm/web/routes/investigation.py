@@ -63,6 +63,7 @@ async def start_investigation(
     mode: str = Form("rumor"),
     query: str = Form(""),
     url: str = Form(""),
+    url_query: str = Form(""),
 ):
     inv_id = uuid.uuid4().hex[:12]
     seed_documents: list[RetrievedDocument] = []
@@ -75,8 +76,11 @@ async def start_investigation(
             state.fail(inv_id, f"Could not fetch or parse URL: {url}")
             return RedirectResponse(f"/result/{inv_id}", status_code=303)
         seed_documents = [article]
-        llm = build_llm()
-        actual_query = _article_to_query(llm, article)
+        if url_query.strip():
+            actual_query = url_query.strip()
+        else:
+            llm = build_llm()
+            actual_query = _article_to_query(llm, article)
     else:
         actual_query = query.strip()
 
@@ -117,3 +121,35 @@ async def result_page(request: Request, inv_id: str):
         "result.html",
         {"inv": inv, "timeline_json": timeline_json},
     )
+
+
+@router.post("/result/{inv_id}/followup")
+async def followup_investigation(
+    request: Request,
+    inv_id: str,
+    query: str = Form(""),
+):
+    """Start a new investigation as a follow-up, seeded with the parent's documents."""
+    parent = state.get(inv_id)
+    if parent is None:
+        return RedirectResponse("/", status_code=303)
+
+    followup_query = query.strip()
+    if not followup_query:
+        return RedirectResponse(f"/result/{inv_id}", status_code=303)
+
+    new_id = uuid.uuid4().hex[:12]
+    seed_documents = list(parent.documents)
+
+    inv = state.StoredInvestigation(
+        id=new_id,
+        query=followup_query,
+        mode=parent.mode,
+        parent_id=inv_id,
+    )
+    state.create(inv)
+
+    loop = asyncio.get_running_loop()
+    loop.run_in_executor(None, _run_investigation, new_id, followup_query, seed_documents)
+
+    return RedirectResponse(f"/result/{new_id}", status_code=303)
