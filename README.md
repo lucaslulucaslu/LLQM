@@ -1,48 +1,161 @@
 # LLQM
 
-Timeline-first investigation agent for both news events and rumors.
+LLQM (来龙去脉, Lái Lóng Qù Mài) — a timeline-first investigation agent that traces news events and rumors from origin to current status. Feed it a question or a news URL — it retrieves evidence from the web, extracts claims, builds a chronological timeline, and delivers a verdict with confidence scores and full citations.
 
-## What This MVP Does
+## Features
 
-- Uses a LangGraph ReAct-style loop to retrieve evidence and synthesize findings.
-- Produces timeline-oriented output with citations and uncertainty notes.
-- Includes rumor-origin tracing (earliest discoverable source and timestamp).
-- Emits a verdict: `supported`, `likely_false`, or `unverified`.
-- Supports a live retriever that searches web sources for both news and rumor discussions.
-- Uses `SERPER_API_KEY` automatically (when present in `.env`) for better real-time research.
+- **LangGraph pipeline** — plan → retrieve → extract → verify → synthesize, with LLM-powered reasoning at every stage
+- **Dynamic iteration** — the agent decides when it has enough evidence to stop (no fixed loop count); a configurable hard cap acts as a safety net
+- **Dual input modes** — investigate a text question ("Did X originate from Y?") or paste a news article URL to build the full story
+- **Hybrid source trust scoring** — 40+ known editorial sources, TLD-based rules (.gov/.edu), page-signal heuristics (schema.org, author tags, corrections policies), and LLM classification fallback for unknown domains
+- **Narrative story summary** — LLM-generated overview of the full story arc, not just individual claims
+- **Visual timeline** — interactive vertical timeline with dated event cards and source links
+- **Streaming progress** — real-time status updates as each pipeline stage completes
+- **Verdict system** — `supported`, `likely_false`, or `unverified` with confidence score, uncertainty notes, and evidence links
 
-## Current Status
+## Quick Start
 
-This is an initial scaffold. The default retriever is a `NullRetriever`, and live retrieval is enabled with `--live`. The graph, models, verification logic, and CLI/UI are implemented.
+### Prerequisites
 
-## Run
+- Python 3.12+
+- An [OpenAI API key](https://platform.openai.com/api-keys)
+- (Optional) A [Serper API key](https://serper.dev/) for higher-quality web search; falls back to DuckDuckGo if absent
+
+### Install
 
 ```bash
-pip install -e .
-llqm "Did rumor X originate from source Y?"
-llqm "Did rumor X originate from source Y?" --live
+uv sync
+```
+
+### Configure
+
+Create a `.env` file in the project root:
+
+```
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini        # optional, defaults to gpt-4o-mini
+SERPER_API_KEY=...               # optional, enables Serper search
+```
+
+### Run
+
+**Web UI (Streamlit):**
+
+```bash
 llqm-ui
 ```
 
-Create a `.env` file in the project root with:
+**CLI:**
 
 ```bash
-OPENAI_API_KEY=...
-SERPER_API_KEY=...
+# Investigate a rumor or question
+llqm "Is the claim about X true?" --live
+
+# Build a timeline from a news article URL
+llqm --url https://www.bbc.com/news/article-id --live
+
+# Adjust the safety cap on research rounds (default: 5)
+llqm "What happened with X?" --live --max-iterations 3
 ```
 
-## Output Contract
+## Architecture
 
-The result includes:
+```
+src/llqm/
+├── cli.py                  # CLI entry point
+├── modules/
+│   ├── llm.py              # OpenAI chat-completions client (httpx, no SDK)
+│   └── retriever.py        # Serper, DuckDuckGo, fallback composition
+├── schemas/
+│   └── models.py           # Pydantic v2 data models
+├── service/
+│   ├── investigation_service.py   # LangGraph state machine
+│   ├── timeline_service.py        # Chronological event builder
+│   └── verification_service.py    # Claim scoring and verdict logic
+├── ui/
+│   ├── app.py              # Streamlit web interface
+│   └── launcher.py         # UI subprocess launcher
+└── utils/
+    ├── date_extractor.py   # Date normalization (ISO, relative, freetext)
+    └── source_registry.py  # Hybrid trust scoring system
+```
 
-- `timeline`: ordered event summaries
-- `key_claims`: extracted claims with evidence and confidence
-- `rumor_origin`: first-seen info and provenance confidence
-- `verdict`: supported / likely_false / unverified
-- `uncertainty_notes`: caveats about source coverage or contradictions
+### Pipeline
 
-## Next Implementation Steps
+```
+┌──────┐   ┌──────────┐   ┌─────────┐   ┌────────┐
+│ Plan │──▶│ Retrieve │──▶│ Extract │──▶│ Verify │
+└──────┘   └──────────┘   └─────────┘   └────┬───┘
+   ▲                                          │
+   │    need more evidence                    │ sufficient
+   └──────────────────────────────────────────┤
+                                              ▼
+                                       ┌─────────────┐
+                                       │ Synthesize  │──▶ Result
+                                       └─────────────┘
+```
 
-- Add API-backed retrieval adapters (NewsAPI/GDELT/etc.) to improve recency and source diversity.
-- Add stronger contradiction detection and claim normalization.
-- Add history storage and comparison mode for repeated investigations.
+| Node | Purpose |
+|---|---|
+| **Plan** | LLM generates 3–4 targeted search queries based on the question and evidence collected so far |
+| **Retrieve** | Runs queries through Serper/DuckDuckGo, deduplicates results across rounds |
+| **Extract** | LLM extracts claims (with evidence links), timeline events, and rumor origin from documents |
+| **Verify** | LLM assesses verdict + confidence, then evaluates evidence sufficiency to decide: loop or stop |
+| **Synthesize** | Ranks top claims, generates a narrative story summary, produces the final `InvestigationResult` |
+
+### Evidence Sufficiency
+
+After each verify step, the agent evaluates five criteria (scored 0–10):
+
+1. **Source diversity** — independent sources backing key claims
+2. **Claim corroboration** — major claims confirmed by ≥2 sources
+3. **Contradiction resolution** — conflicts addressed or noted
+4. **Temporal coverage** — timeline spans the full story
+5. **Confidence level** — overall certainty in the verdict
+
+If the score is high enough, research stops early. Otherwise it loops back to plan new queries. A hard cap (default 5 rounds) guarantees termination.
+
+### Source Trust Scoring
+
+Unknown sources are evaluated through a hybrid system:
+
+| Layer | Example | Method |
+|---|---|---|
+| Known dictionary | reuters.com → 0.92 | Curated editorial scores for 40+ domains |
+| TLD rules | cdc.gov → 0.88 | `.gov`, `.edu`, `.mil` get high trust |
+| Page signals | `NewsArticle` JSON-LD → +0.08 | Schema.org markup, author tags, ethics policies |
+| LLM fallback | unknown-site.com → classified | Only when heuristic confidence is low |
+| Default | 0.50 | Neutral baseline |
+
+Results are cached per domain to avoid redundant evaluation.
+
+## Output
+
+The `InvestigationResult` includes:
+
+| Field | Description |
+|---|---|
+| `verdict` | `supported`, `likely_false`, or `unverified` |
+| `confidence` | 0.0–1.0 overall confidence |
+| `summary` | Narrative overview of the full story |
+| `timeline` | Chronological events with dates and source URLs |
+| `key_claims` | Top claims with evidence, support/contradiction counts, and confidence |
+| `rumor_origin` | Earliest source, date, URL, and provenance confidence |
+| `uncertainty_notes` | Caveats about evidence gaps or contradictions |
+
+## Development
+
+```bash
+# Install dependencies
+uv sync
+
+# Run tests
+python -m unittest discover -s tests -v
+
+# Launch the UI in dev
+uv run llqm-ui
+```
+
+## License
+
+MIT
