@@ -1,0 +1,82 @@
+[
+  {
+    "query": "Do vaccines cause autism?",
+    "verdict": "likely_false",
+    "confidence": 0.99,
+    "summary": "The story is about whether vaccines cause autism, a claim that has been repeatedly investigated and rejected by medical and public health experts. The concern traces back to a 1998 paper that linked the MMR vaccine to autism and helped spark widespre",
+    "key_claims_count": 4,
+    "evidence_sources": 6
+  },
+  {
+    "query": "Does 5G spread COVID-19?",
+    "verdict": "likely_false",
+    "confidence": 0.99,
+    "summary": "The story is about a false claim that 5G mobile networks cause or spread COVID-19, and how that conspiracy theory spread during the early months of the pandemic. In March 2020, as the virus was emerging globally, theorists began linking COVID-19 to 5",
+    "key_claims_count": 4,
+    "evidence_sources": 5
+  },
+  {
+    "query": "Was the Moon landing a hoax?",
+    "verdict": "likely_false",
+    "confidence": 0.98,
+    "summary": "The story concerns whether the Apollo 11 Moon landing was faked, and the evidence overwhelmingly indicates it was real. Apollo 11 launched on 1969-07-16 with the goal of making the first human landing on the Moon, and the landing itself is tied to re",
+    "key_claims_count": 5,
+    "evidence_sources": 2
+  },
+  {
+    "query": "Is the Earth flat?",
+    "verdict": "likely_false",
+    "confidence": 0.99,
+    "summary": "The story is about whether the Earth is flat, and the evidence overwhelmingly shows that it is not. By around 500 B.C., most ancient Greeks were already described as believing the Earth was round, and in the 3rd century B.C. Hellenistic astronomers e",
+    "key_claims_count": 5,
+    "evidence_sources": 15
+  },
+  {
+    "query": "Was the 2020 election stolen from Trump?",
+    "verdict": "likely_false",
+    "confidence": 0.99,
+    "summary": "The story is about whether Donald Trump\u2019s 2020 election loss was the result of a stolen election, and the evidence overwhelmingly says it was not. After the vote, Trump and his allies launched numerous lawsuits and pushed for recounts in battleground",
+    "key_claims_count": 4,
+    "evidence_sources": 5
+  },
+  {
+    "query": "Is Pizzagate a real conspiracy?",
+    "verdict": "likely_false",
+    "confidence": 0.99,
+    "summary": "Pizzagate was a false conspiracy theory that claimed a Washington, D.C. pizzeria was connected to a child abuse and trafficking ring involving Hillary Clinton and others. It emerged and spread online during the 2016 U.S. presidential election cycle, ",
+    "key_claims_count": 5,
+    "evidence_sources": 4
+  },
+  {
+    "query": "Did Joe Biden fall during the 2023 campaign?",
+    "verdict": "supported",
+    "confidence": 0.99,
+    "summary": "The story is about whether Joe Biden fell during the 2023 campaign, and the evidence shows that he did. Biden launched his 2024 presidential campaign in April 2023, after which his public appearances drew increasing attention because of concerns abou",
+    "key_claims_count": 4,
+    "evidence_sources": 2
+  },
+  {
+    "query": "Did hydroxychloroquine cure COVID-19?",
+    "verdict": "likely_false",
+    "confidence": 0.98,
+    "summary": "This story is about whether hydroxychloroquine actually cured COVID-19, a claim that circulated widely in 2020 and was tested in multiple studies. Early in the pandemic, media fact checks in April 2020 noted that the drug was being promoted for coron",
+    "key_claims_count": 4,
+    "evidence_sources": 1
+  },
+  {
+    "query": "Did a UFO crash at Roswell in 1947?",
+    "verdict": "unverified",
+    "confidence": 0.93,
+    "summary": "The Roswell story is about a 1947 incident in which a military press release about a \u201cflying disk\u201d crash near Roswell, New Mexico, later became one of the most famous UFO claims in history. On July 8, 1947, Roswell Army Air Field issued a statement s",
+    "key_claims_count": 4,
+    "evidence_sources": 2
+  },
+  {
+    "query": "Is JFK still alive?",
+    "verdict": "likely_false",
+    "confidence": 0.99,
+    "summary": "This story is about whether John F. Kennedy is still alive, and the evidence overwhelmingly shows that he is not. Kennedy was assassinated on November 22, 1963, a fact supported by the historical record and the strongest available evidence. In the de",
+    "key_claims_count": 4,
+    "evidence_sources": 3
+  }
+]
