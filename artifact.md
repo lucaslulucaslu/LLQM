@@ -4,17 +4,67 @@
 
 ---
 
-## 1. System Overview
+## 1. Quick Access and Running LLQM
+
+If you're new to LLQM, start here: this is the repository, the main components, and the fastest way to run the system.
+
+### Code Location
+
+**Repository:** https://github.com/lucaslulucaslu/LLQM
+
+Key components:
+- [src/llqm/service/verification_service.py](src/llqm/service/verification_service.py): Core verification logic
+- [src/llqm/utils/source_registry.py](src/llqm/utils/source_registry.py): Source trust scoring
+- [src/llqm/service/investigation_service.py](src/llqm/service/investigation_service.py): Claim extraction
+
+### Running the System
+
+**Environment setup:**
+
+Copy `.env.example` to `.env` in the project root, then fill in the required values:
+
+```bash
+copy .env.example .env
+```
+
+```env
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-5.4-mini
+SERPER_API_KEY=your_key_here   # optional, improves live search quality
+```
+
+`OPENAI_API_KEY` is required for LLM-assisted extraction/verification. `SERPER_API_KEY` is optional; without it, retrieval falls back to DuckDuckGo.
+
+**Interactive Web UI:**
+```bash
+llqm-ui
+```
+Features: Live timeline building, claim drill-down, source authority visualization, verdict generation.
+
+**Command-line Interface:**
+```bash
+llqm "your question here" --live
+llqm --url https://news.article --live
+```
+
+**Batch Testing:**
+```bash
+python tests/test_disinformation.py
+```
+
+---
+
+## 2. System Overview
 
 **LLQM** (来龙去脉, "source and path") combines timeline reconstruction with source trust scoring to investigate claims and produce confidence-weighted verdicts backed by complete evidence trails.
 
 ### Pipeline Architecture
 
 ```
-Plan   →   Retrieve   →   Extract   →   Verify   →   Synthesize
-  ↓           ↓              ↓             ↓              ↓
-Query       Web Search     Claims        Scoring        Verdict +
-Expansion   to Docs        + Events      + Trust        Confidence
+Plan → Retrieve → Extract → Verify → Synthesize
+ ↓        ↓         ↓        ↓         ↓
+Query   Web Search  Claims   Scoring   Verdict +
+Expansion to Docs   + Events + Trust   Confidence
 ```
 
 ### Key Output: `InvestigationResult`
@@ -30,11 +80,11 @@ Each investigation produces a structured result containing:
 
 ---
 
-## 2. Hybrid Source Trust Scoring
+## 3. Source Trust Scoring
 
 LLQM assigns trustworthiness to sources through four layered mechanisms, combining editorial reputation, institutional signals, page-level metadata, and LLM classification.
 
-### 2.1 Editorial Source Registry
+### Editorial Source Registry
 
 A curated database of ~40 major outlets with pre-assigned trust scores:
 
@@ -48,7 +98,7 @@ A curated database of ~40 major outlets with pre-assigned trust scores:
 
 **Rationale:** Editorial outlets maintain verification standards and face reputational consequences; social platforms and blogs do not.
 
-### 2.2 Institutional Domain Signals
+### Institutional Domain Signals
 
 Domain-level trust is assessed by top-level domain:
 
@@ -61,7 +111,7 @@ Domain-level trust is assessed by top-level domain:
 
 **Rationale:** Institutional domains face reputational and legal accountability.
 
-### 2.3 Page-Level Signals
+### Page-Level Signals
 
 Structured data and metadata provide verification signals:
 
@@ -74,7 +124,7 @@ Structured data and metadata provide verification signals:
 
 **Rationale:** Professional outlets publish structured metadata; hoax sites do not.
 
-### 2.4 LLM Classification Fallback
+### LLM Classification Fallback
 
 For unknown domains, the system uses LLM analysis:
 
@@ -90,7 +140,7 @@ For unknown domains, the system uses LLM analysis:
 
 ---
 
-## 3. Claim Scoring and Confidence
+## 4. Claim Scoring and Confidence Calculation
 
 Claims are scored by evaluating corroboration across sources, source trust levels, and contradiction signals.
 
@@ -125,7 +175,7 @@ confidence = max(0.0, min(1.0,
 
 ---
 
-## 4. The Critical Gap: Source Trust vs. Truth
+## 5. The Critical Gap: Source Trust vs. Truth
 
 ### The Core Problem
 
@@ -170,7 +220,7 @@ The fundamental challenge: Source trust measures *verification intensity*, not *
 
 Source trust is a proxy for institutional reliability, not claim accuracy:
 
-- **Reuters** (0.92): 3,000+ journalists with fact-checkers → highly unlikely to publish easily falsifiable lies
+- **Reuters** (0.92): large professional newsroom and editorial process → lower likelihood of publishing easily falsifiable lies
 - **Reddit user** (0.30): Might discover truth through primary research but no institutional verification
 - **Substack bot** (0.40): Might publish propaganda but accidentally be correct
 
@@ -183,7 +233,7 @@ When adversaries know this scoring model, they exploit it:
 
 ---
 
-## 5. Current Mitigations (Incomplete)
+## 6. Current Mitigations (Incomplete)
 
 The system attempts several defenses, each with known limitations:
 
@@ -198,9 +248,9 @@ The system attempts several defenses, each with known limitations:
 
 ---
 
-## 6. Direction Forward: Oracle-Separated Verification
+## 7. Direction Forward: Oracle-Separated Verification
 
-### 6.1 Separate Claim Producer from Verifier
+### Separate Claim Producer from Verifier
 
 **The core insight:** The same LLM that extracts claims from high-trust sources also grades whether to believe them. This creates implicit bias—if Reuters says it, extraction respects that authority; grading inherits that respect.
 
@@ -221,7 +271,7 @@ Independent Oracle Verifier:
 
 **Outcome:** A significant gap between producer and oracle confidence triggers investigation mode—something is systematically wrong.
 
-### 6.2 Build Regression Corpora by Claim Class
+### Build Regression Corpora by Claim Class
 
 Different claim types require different verification approaches. Build golden sets (manually verified by domain experts) and refute sets (adversarial variants) for each class:
 
@@ -251,7 +301,7 @@ Different claim types require different verification approaches. Build golden se
 
 **Track verifier accuracy per class and maintain a scoring dashboard.**
 
-### 6.3 Upgrade Contradiction Analysis
+### Upgrade Contradiction Analysis
 
 Replace shallow negation detection with structured analysis:
 
@@ -274,7 +324,7 @@ if contradiction_found:
     verdict ← "unverified"
 ```
 
-### 6.4 Trace Provenance Chains
+### Trace Provenance Chains
 
 Track the full citation chain, not just the origin:
 
@@ -302,9 +352,9 @@ Trust application:
 
 ---
 
-## 7. Real-World Testing Results
+## 8. Real-World Testing Results
 
-### 7.1 Test Dataset
+### Test Dataset
 
 | Metric | Value |
 |--------|-------|
@@ -314,12 +364,12 @@ Trust application:
 | **Settings** | max_iterations=2, live retriever enabled, LLM enabled |
 | **Date run** | 2026-06-21 |
 
-### 7.2 Results Summary
+### Results Summary
 
 **Overall accuracy: 9/10 strict (90%)**
 If `unverified` is counted as a safe non-supporting outcome for legacy disputed claims, operationally this is 10/10 non-supporting or correct.
 
-Status legend: ✓ = exact match, △ = safe non-supporting mismatch.
+Status legend: `✓` = exact label match, `△` = safe non-supporting mismatch.
 
 | Query | Ground Truth | System Verdict | Confidence | Status |
 |-------|--------------|----------------|-----------|--------|
@@ -334,11 +384,11 @@ Status legend: ✓ = exact match, △ = safe non-supporting mismatch.
 | Did UFO crash at Roswell? | FALSE | unverified | 0.93 | △ |
 | Is JFK still alive? | FALSE | likely_false | 0.99 | ✓ |
 
-### 7.3 What Worked
+### What Worked
 
-The system performed strongly on "historical" disinformation—claims where:
+The system performed strongly on this small historical disinformation set, especially for claims where:
 
-1. Fact-checkers published explicit debunking (Snopes, FactCheck.org, Reuters)
+1. Fact-checkers and major outlets published explicit debunking (Snopes, FactCheck.org, Reuters)
 2. Contradictions were clear and high-trust (health authorities, government records)
 3. Claim had extensive coverage in searchable news archives
 
@@ -348,7 +398,7 @@ The system performed strongly on "historical" disinformation—claims where:
 - Evidence chain: Original false claim → social media amplification → news coverage → fact-checker rebuttal
 - Key success: System correctly weighted fact-checker sources above amplification sources
 
-### 7.4 Edge Cases: Recent True Events and Legacy Conspiracy Claims
+### Edge Cases: Recent True Events and Legacy Conspiracy Claims
 
 **Biden Fall (Actual: TRUE, System: SUPPORTED, confidence: 0.99)**
 
@@ -364,7 +414,7 @@ This is a conservative miss: the system did not support the UFO claim, but also 
 
 **Result:** Contradiction evidence for Roswell appears weaker/less explicit in retrieved sources than modern, fact-check-rich narratives.
 
-### 7.5 Critical Limitation
+### Critical Limitation
 
 **Near-perfect performance on solved cases can mask a structural problem:** These are historical disinformation claims with public debunking.
 
@@ -386,26 +436,28 @@ Consider this scenario (not in test set):
 
 This is the oracle-separation problem in action.
 
-### 7.6 Accuracy by Claim Type
+### Accuracy by Claim Type
 
-| Claim Type | Accuracy | Notes |
-|-----------|----------|-------|
-| Historic false claims | 100% | 50+ years of archives, massive debunking |
-| Recent health disinformation | 100% | Active fact-checker coverage, medical consensus |
-| Political/event claims | 100% | Heavily covered, clear contradictions |
-| Legacy conspiracy claims | Mixed | Roswell returned `unverified` (safe, but not a hard debunk) |
-| Recent true events | 99% | Temporal filtering worked correctly in this run |
+| Claim Type | Strict Accuracy | Notes |
+|-----------|------------------|-------|
+| Historic false claims (n=3) | 100% (3/3) | 50+ years of archives, strong debunking coverage |
+| Recent health disinformation (n=3) | 100% (3/3) | Active fact-checker coverage and medical consensus |
+| Political/event claims (n=3) | 100% (3/3) | Heavily covered, clear contradiction trails |
+| Legacy conspiracy claims (n=1) | 0% (0/1) strict | Roswell returned `unverified` (safe, but not a hard debunk) |
+| Recent true events (n=1) | 100% (1/1) | Temporal filtering worked correctly in this run |
 
-**What would break it:**
+**Potential break scenarios (not directly tested in this 10-case set):**
 - True claims that *sound* false (e.g., "government tested vaccine on X population")
-- False claims *coordinated across high-trust sources* before debunking available
+- False claims *coordinated across high-trust sources* before debunking is available
+
+Note: This dataset is intentionally small (10 cases) and should be treated as a directional signal, not a production-grade benchmark.
 
 
 ---
 
-## 8. Key Takeaways
+## 9. Key Takeaways
 
-### What This System Demonstrates Well
+### What This System Gets Right
 
 - **Comprehensive timeline building:** Chronological event reconstruction from unstructured documents
 - **Multi-layered source trust:** Combines editorial reputation, domain structure, page metadata, and LLM classification
@@ -423,47 +475,13 @@ The system solves *retrieval and ranking* effectively but cannot defend against:
 
 **The path forward requires oracle-separated architecture:** An independent verifier that re-checks claims blind to source identity, compared against regression corpora designed for specific claim types, with structured contradiction analysis and full provenance tracing.
 
----
-
-## 9. System Access and Reproduction
-
-### Code Location
-
-**Repository:** Local LLQM project artifact used for this analysis.
-
-Key components:
-- [src/llqm/service/verification_service.py](src/llqm/service/verification_service.py): Core verification logic
-- [src/llqm/utils/source_registry.py](src/llqm/utils/source_registry.py): Source trust scoring
-- [src/llqm/service/investigation_service.py](src/llqm/service/investigation_service.py): Claim extraction
-
-### Running the System
-
-**Interactive Web UI:**
-```bash
-llqm-ui
-```
-Features: Live timeline building, claim drill-down, source authority visualization, verdict generation.
-
-**Command-line Interface:**
-```bash
-llqm "your question here" --live
-llqm --url https://news.article --live
-```
-
-**Batch Testing:**
-```bash
-python tests/test_disinformation.py
-```
-
----
-
 ## 10. Paid Work Trial Plan (One Week)
 
-Product.ai evaluates the paid trial on how quickly I can ground myself in their real environment, write a clear verification spec before building, verify agent outputs rigorously, and assess my own work honestly. This plan is optimized for that exact bar.
+Product.ai evaluates the paid trial on how quickly I can ground myself in the real environment, write a clear verification spec before building, verify agent outputs rigorously, and assess my own work honestly. This plan is optimized for that bar.
 
 ### 10.1 Trial Objective
 
-Ship one measurable improvement to verification quality in one live loop, while producing artifacts that are easy for the team to audit:
+Ship one measurable improvement to verification quality in one live loop, while producing artifacts the team can audit quickly:
 
 1. A short system map of current verification flow
 2. A failure taxonomy grounded in Product.ai data
@@ -473,7 +491,7 @@ Ship one measurable improvement to verification quality in one live loop, while 
 ### 10.2 Day-by-Day Execution
 
 1. **Day 1: Grounding and System Map**
-  - Ingest Product.ai data model: claims, evidence schema, confidence tiers, freshness logic, citation structure
+  - Ingest Product.ai data model: claims, evidence schema, confidence tiers, freshness logic, and citation structure
   - Trace one production-like agent loop end-to-end
   - Deliverable: 1-2 page verification flow map with observed risks and open questions
 
@@ -484,7 +502,7 @@ Ship one measurable improvement to verification quality in one live loop, while 
 
 3. **Day 3: Spec Before Build**
   - Select the single highest-impact failure class
-  - Write a concise verification spec: acceptance criteria, guardrail behavior, fallback rules, rollback plan
+  - Write a concise verification spec: acceptance criteria, guardrail behavior, fallback rules, and rollback plan
   - Deliverable: implementation-ready spec reviewed with stakeholders
 
 4. **Day 4: Implement One Improvement**
@@ -492,8 +510,8 @@ Ship one measurable improvement to verification quality in one live loop, while 
   - Run in shadow mode or reversible mode first
   - Deliverable: working code path and run logs
 
-5. **Day 5: Evaluate, Report, and Self-Assess**
-  - Run before/after comparison on the same eval slice
+5. **Day 5: Evaluate, Report, and Self-Assessment**
+  - Run before/after comparison on the same evaluation slice
   - Quantify quality movement and token-cost impact
   - Deliverable: trial report with wins, misses, unknowns, and next-step recommendations
 
@@ -501,7 +519,7 @@ Ship one measurable improvement to verification quality in one live loop, while 
 
 - I will not attempt a broad platform rewrite.
 - I will not force LLQM patterns onto Product.ai without evidence.
-- I will not optimize for impressive demos over measurable verification gain.
+- I will not optimize for an impressive demo over measurable verification gain.
 
 ### 10.4 Success Criteria for the Week
 
